@@ -17,3 +17,7 @@ export async function submitPrayer(formData: FormData) {
 
   return { success: false, error: 'Prayer cannot be empty' };
 }
+
+export async function getPrayers() {
+  return;
+}

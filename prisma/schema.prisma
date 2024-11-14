@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+model User {
+  id            String    @id
+  firstName     String?
+  lastName      String?
+  username      String?   @unique
+  externalId    String    @unique // Clerk user ID
+  emailAddresses Email[]
+  prayers       Prayer[]
+  circles       Circle[]  @relation("CircleMembers")
+  ownedCircles  Circle[]  @relation("CircleOwner")
+  prayedFor     Prayer[]  @relation("PrayerSupport")
+  calendarEvents CalendarEvent[]
+  comments      Comment[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Email {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Prayer {
+  id          String    @id @default(cuid())
+  content     String
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String
+  circle      Circle?   @relation(fields: [circleId], references: [id])
+  circleId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  prayedBy    User[]    @relation("PrayerSupport")
+  isAnonymous Boolean   @default(false)
+  tags        Tag[]
+  comments    Comment[]
+}
+
+model Circle {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  owner       User     @relation("CircleOwner", fields: [ownerId], references: [id])
+  ownerId     String
+  members     User[]   @relation("CircleMembers")
+  prayers     Prayer[]
+  events      CalendarEvent[] // Add this line to define the reverse relation
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isPrivate   Boolean  @default(false)
+}
+
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  circle      Circle?  @relation(fields: [circleId], references: [id])
+  circleId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  prayers   Prayer[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  prayer    Prayer   @relation(fields: [prayerId], references: [id])
+  prayerId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ isDeleted Boolean  @default(false)
+}
